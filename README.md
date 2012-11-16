@@ -14,7 +14,7 @@ utils.add(1,2) (result)-> # result.should.equal 3
 
 ### server side
 
-ore detail see [the php backend](https://github.com/zweifisch/Invoker-php)
+more details see [test/index.php](https://github.com/zweifisch/invoker/blob/master/test/index.php) and [the php backend](https://github.com/zweifisch/Invoker-php)
 
 ```php
 require 'vendor/autoload.php';
