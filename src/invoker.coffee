@@ -142,8 +142,18 @@ class Invocation
 
 	abort: ->
 		@__ajax.abort?()
-	
+
+class ServerSideClass
+	constructor:(@construct_args...)->
+
+getClass= (@class,methods...)->
+	cls = class extends ServerSideClass
+	for methods in methods
+		cls::[method] = (args...)->
+	cls
+
 
 exports = exports ? this
 exports.Invoker = Invoker
 exports.Signal = Signal
+exports.getClass = getClass

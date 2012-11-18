@@ -250,4 +250,37 @@
     });
   });
 
+  describe('getClass', function() {
+    return describe('static method', function() {
+      it('should be able to call static method without creating a new instance', function(done) {
+        var Utils;
+        Utils = getClass('Utils', ['add', 'addList']);
+        return Utils.add(1, 2)(function(result) {
+          result.should.equal(3);
+          return done();
+        });
+      });
+      return it('should be able to crate instance of class', function(done) {
+        var User;
+        User = getClass('User', ['save', 'listUsers']);
+        return batchInvocations(function(invocation_done) {
+          var user;
+          User.listUsers()(function(users) {
+            return users.length.should.equal(2);
+          });
+          user = new User('foo');
+          user.save()(function(result) {
+            return result.should.equal(true);
+          });
+          User.listUsers()(function(users) {
+            return users.length.shoud.equal(3);
+          });
+          return invocation_done(function() {
+            return done();
+          });
+        });
+      });
+    });
+  });
+
 }).call(this);

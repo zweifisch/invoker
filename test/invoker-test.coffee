@@ -152,3 +152,23 @@ describe 'Invocation', ->
 				result.should.equal 3
 				console.log 'no way to test it programmatically?'
 			invocation.abort()
+
+describe 'getClass',->
+	describe 'static method',->
+		it 'should be able to call static method without creating a new instance', (done)->
+			Utils = getClass 'Utils', ['add','addList']
+			Utils.add(1,2) (result)->
+				result.should.equal 3
+				done()
+
+		it 'should be able to crate instance of class', (done)->
+			User = getClass 'User', ['save','listUsers']
+			batchInvocations (invocation_done)->
+				User.listUsers() (users)->
+					users.length.should.equal 2
+				user = new User 'foo'
+				user.save() (result)->
+					result.should.equal true
+				User.listUsers() (users)->
+					users.length.shoud.equal 3
+				invocation_done -> done()
