@@ -3,9 +3,21 @@
 class User
 {
 	static $posts = [];
+	static $users = [];
 	function __construct($username)
 	{
 		$this->username = $username;
+	}
+
+	function save()
+	{
+		self::$users[] = $this->username;
+		return true;
+	}
+
+	static function listUsers()
+	{
+		return self::$users;
 	}
 
 	function create()

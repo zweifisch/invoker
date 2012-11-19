@@ -6,10 +6,23 @@ A CoffeeScript library for Client/Server interaction, inspired by [fetch](https:
 
 ### client side
 
-```coffeescript
-utils = new Invoker 'Utils', ['add']
+```html
+<script type="text/javascript" src="invoker.js"></script>
+<script type="text/javascript" src="classes"></script>
+```
 
-utils.add(1,2) (result)-> # result.should.equal 3
+```coffeescript
+{Utils,User} = classes
+{batch} = invoker
+
+Utils.add(1,2) (result)-> # result.should.equal 3
+batch (done)->
+	User.listUsers() (users)->
+		# users.length.should.equal 0
+	user = new User 'foo'
+	user.save()
+	User.listUsers() (users)->
+		# users.length.should.equal 1
 ```
 
 ### server side
@@ -19,8 +32,15 @@ more details see [test/index.php](https://github.com/zweifisch/invoker/blob/mast
 ```php
 require 'vendor/autoload.php';
 
-server = new Invoker\Server();
-server->listen();
+allowedMethods = array(
+	'Utils'=>'*',
+	'User'=>'*',
+	'Path'=>array('pwd'),
+);
+# Utils,User,Path must be available
+
+$server = new Invoker\Server(allowedMethods);
+$server->listen();
 ```
 
 ## more on client side
@@ -28,15 +48,13 @@ server->listen();
 one line version
 
 ```coffeescript
-Invoker.invoke ['Utils','add',[1,2]], (result)-> console.log result is 3
+invoker.invoke ['Utils','add',[1,2]], (result)-> console.log result is 3
 ```
 
 call multiple methods in one ajax request
 
 ```coffeescript
-utils = new Invoker 'Utils', ['add']
-path = new Invoker 'Path', ['pwd']
-Invoker.batch (done)->
+invoker.batch (done)->
 	utils.add(1,2) (sum)->
 		console.log sum is 3
 	utils.add(2,3) (sum)->
@@ -47,8 +65,10 @@ Invoker.batch (done)->
 		console.log 'done'
 ```
 
+abort an invocation
+
 ```coffeescript
-invocation = Invoker.batch ->
+invocation = batch ->
 	utils.add (1,2) (sum)->
 invocation.abort()
 ```
@@ -56,41 +76,16 @@ invocation.abort()
 handle errors
 
 ```coffeescript
-utils.add(1,2)
+Utils.add(1,2)
 	success:(result)->
 	error:(result,code)->
 ```
 		
-## more on server side
-
-### chage default uri, specify allowed methods
-
-```php
-allowedMethods = array(
-	'Util'=>'*',
-	'Path'=>array('pwd'),
-);
-
-$server = new Invoker\Server(allowedMethods);
-$server->listen('/path');
-```
 	
 ### intergration with other framework
 
-codeigniter
+TBD
 
-```php
-class Gateway extends Controller
-{
-	function index()
-	{
-		$this->load->config('allowed_methods');
-		$server = new Invoker\Server($this->config->item('allowed_methods'));
-		$server->process();
-	}
-}
-```
-	
 ## test
 
 ```sh
@@ -99,4 +94,5 @@ composer install
 php -S localhost:1212 index.php
 ```
 
+visit http://localhost:1212
 

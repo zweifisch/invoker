@@ -63,7 +63,6 @@ class Ajax
 class Invoker
 	@adding_invocation = new Signal
 	@adding_callback = new Signal
-	@url = 'gateway'
 
 	constructor:(@classname,methods,@__construct_args)->
 		for method in methods
@@ -86,11 +85,11 @@ class Invoker
 			else
 				# console.log "#{@classname}:#{@__counter} not handled"
 				(cb)=>
-					invocation = new Invocation @constructor.url, [call], [cb]
+					invocation = new Invocation [call], [cb]
 					invocation.send()
 
 	@invoke:([classname,method,args,construt_args],cb)->
-		invocation = new Invocation @url, [[classname,method,args,construt_args]], [cb]
+		invocation = new Invocation [[classname,method,args,construt_args]], [cb]
 		invocation.send()
 
 	@batch:(setup)->
@@ -110,20 +109,20 @@ class Invoker
 		@adding_invocation.remove registration, registration2
 		callbacks = (callback for [_,_,_,callback] in calls)
 		calls = (call for [call,_,_,_] in calls)
-		invocation = new Invocation @url,calls,callbacks
+		invocation = new Invocation calls,callbacks
 		invocation.send done_callback, map_callback
 
 	@abort:->
 
 class Invocation
-	constructor:(@url,@__calls,@__callbacks)->
+	constructor:(@__calls,@__callbacks)->
 		@__calls = @__calls ? []
 		@__callbacks= @__callbacks ? []
 
 	send: (@__done,@__map)->
 		opts =
 			type:'POST'
-			url: @url
+			url: '/'
 			headers:
 				'Content-type': 'application/json; charset=utf-8'
 			callback:(code,text)=>
@@ -143,17 +142,77 @@ class Invocation
 	abort: ->
 		@__ajax.abort?()
 
-class ServerSideClass
-	constructor:(@construct_args...)->
 
-getClass= (@class,methods...)->
-	cls = class extends ServerSideClass
-	for methods in methods
-		cls::[method] = (args...)->
+
+class Uid
+	@id = 0
+	@getUid = ->
+		@id += 1
+
+addingInvocation = new Signal
+addingCallback = new Signal
+
+addInvocation = (cls,method,args,construct_args)->
+	id = Uid.getUid()
+	call = [cls,method,args,construct_args]
+	handled = addingInvocation.dispatch [call,id]
+	if handled
+		(cb)=>
+			addingCallback.dispatch [cb,id]
+	else
+		(cb)=>
+			invocation = new Invocation [call], [cb]
+			invocation.send()
+
+getClass = ({name,methods,staticMethods})->
+	cls = class
+		constructor:(@__construct_args...)->
+	cls.__name = name
+	if methods?
+		for method in methods
+			do(method)->
+				cls::[method] = (args...)->
+					addInvocation @constructor.__name,method,args,@__construct_args
+	if staticMethods?
+		for method in staticMethods
+			do(method)->
+				cls[method] = (args...)->
+					addInvocation @__name,method,args
 	cls
 
+getClasses = (classSchemas)->
+	(getClass {name:name,staticMethods:staticMethods,methods:methods} for [name,staticMethods,methods] in classSchemas)
+
+batch = (setup)->
+	done_callback = map_callback = null
+	done = (cb)-> done_callback = cb
+	map = (cb)-> map_callback = cb
+	calls = []
+	registration = addingInvocation.add ([call,id,invoker])->
+		calls.push [call,id,invoker]
+		true
+	registration2 = addingCallback.add ([callback,id,invoker])->
+		for [call,call_id,call_invoker],idx in calls
+			if call_id is id and call_invoker is invoker
+				calls[idx].push callback
+				break
+	setup done, map
+	addingInvocation.remove registration
+	addingCallback.remove registration2
+	callbacks = (callback for [_,_,_,callback] in calls)
+	calls = (call for [call,_,_,_] in calls)
+	invocation = new Invocation calls,callbacks
+	invocation.send done_callback, map_callback
+
+invoke = ([classname,method,args,construt_args],cb)->
+	invocation = new Invocation [[classname,method,args,construt_args]], [cb]
+	invocation.send()
 
 exports = exports ? this
-exports.Invoker = Invoker
-exports.Signal = Signal
-exports.getClass = getClass
+
+exports.invoker =
+	Signal: Signal
+	getClass: getClass
+	getClasses: getClasses
+	batch: batch
+	invoke: invoke
