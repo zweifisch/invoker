@@ -7,22 +7,41 @@ A CoffeeScript library for Client/Server interaction, inspired by [fetch](https:
 ### client side
 
 ```html
-<script type="text/javascript" src="invoker.js"></script>
-<script type="text/javascript" src="classes"></script>
+<script type="text/javascript" src="scripts"></script>
 ```
 
 ```coffeescript
-{Utils,User} = classes
 {batch} = invoker
+{Utils,User} = invoker.classes
 
 Utils.add(1,2) (result)-> # result.should.equal 3
 batch (done)->
 	User.listUsers() (users)->
-		# users.length.should.equal 0
+		# users.should.have.length 0
 	user = new User 'foo'
 	user.save()
 	User.listUsers() (users)->
-		# users.length.should.equal 1
+		# users.should.have.length 1
+```
+
+javascript version:
+```javascript
+var batch = invoker.batch;
+	Utils = invoker.classes.Utils,
+	User = invoker.classes.User,
+Utils.add(1,2)(function(result){
+	// result.should.equla(3)
+});
+batch(function(done){
+	User.listUser()(function(users){
+		// user.should.have.length(0)
+	});
+	user = new User('foo');
+	user.save();
+	User.listUsers()(function(users){
+		// user.should.have.length(1)
+	});
+});
 ```
 
 ### server side
@@ -94,5 +113,5 @@ composer install
 php -S localhost:1212 index.php
 ```
 
-visit http://localhost:1212
+visit [http://localhost:1212](http://localhost:1212)
 

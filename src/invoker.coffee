@@ -60,60 +60,6 @@ class Ajax
 			xhr.abort?()
 		__xhrs = {}
 
-class Invoker
-	@adding_invocation = new Signal
-	@adding_callback = new Signal
-
-	constructor:(@classname,methods,@__construct_args)->
-		for method in methods
-			@__register method
-		@__counter = 0
-
-	__register:(method)->
-		@[method] = @__call method
-
-	__call:(method)->
-		(args...)->
-			call = [@classname,method,args,@__construct_args]
-			id = @__counter
-			@__counter += 1
-			handled = @constructor.adding_invocation.dispatch [call,id,this]
-			if handled
-				do (id)=>
-					(cb)=>
-						@constructor.adding_callback.dispatch [cb,id,this]
-			else
-				# console.log "#{@classname}:#{@__counter} not handled"
-				(cb)=>
-					invocation = new Invocation [call], [cb]
-					invocation.send()
-
-	@invoke:([classname,method,args,construt_args],cb)->
-		invocation = new Invocation [[classname,method,args,construt_args]], [cb]
-		invocation.send()
-
-	@batch:(setup)->
-		done_callback = map_callback = null
-		done = (cb)-> done_callback = cb
-		map = (cb)-> map_callback = cb
-		calls = []
-		registration = @adding_invocation.add ([call,id,invoker])->
-			calls.push [call,id,invoker]
-			true
-		registration2 = @adding_callback.add ([callback,id,invoker])->
-			for [call,call_id,call_invoker],idx in calls
-				if call_id is id and call_invoker is invoker
-					calls[idx].push callback
-					break
-		setup done, map
-		@adding_invocation.remove registration, registration2
-		callbacks = (callback for [_,_,_,callback] in calls)
-		calls = (call for [call,_,_,_] in calls)
-		invocation = new Invocation calls,callbacks
-		invocation.send done_callback, map_callback
-
-	@abort:->
-
 class Invocation
 	constructor:(@__calls,@__callbacks)->
 		@__calls = @__calls ? []
@@ -141,8 +87,6 @@ class Invocation
 
 	abort: ->
 		@__ajax.abort?()
-
-
 
 class Uid
 	@id = 0
