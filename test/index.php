@@ -17,9 +17,4 @@ $server->get('/',function(){
 	return file_get_contents(__DIR__ . '/index.html');
 });
 
-$server->get('/js-injected',function(){
-	return file_get_contents(__DIR__ . '/js-injected.html');
-});
-
-
 $server->listen();

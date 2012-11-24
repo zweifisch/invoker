@@ -13,8 +13,13 @@ A CoffeeScript library for Client/Server interaction, inspired by [fetch](https:
 ```coffeescript
 {batch} = invoker
 {Utils,User} = invoker.classes
+# Utils and User are classes generated in the included 'scripts'
+# mapped to server side classes
 
+# calling server side static method
 Utils.add(1,2) (result)-> # result.should.equal 3
+
+# calling multiple methods in one request
 batch (done)->
 	User.listUsers() (users)->
 		# users.should.have.length 0
@@ -47,6 +52,7 @@ batch(function(done){
 ### server side
 
 more details see [test/index.php](https://github.com/zweifisch/invoker/blob/master/test/index.php) and [the php backend](https://github.com/zweifisch/Invoker-php)
+the php classes can be found [here](https://github.com/zweifisch/invoker/tree/master/test/php)
 
 ```php
 require 'vendor/autoload.php';
