@@ -47,6 +47,22 @@ describe 'getClass', ->
 					users.length.should.equal 1
 				onBatchDone done
 
+		it 'should handle errors', (done)->
+			Path = getClass
+				name: 'Path'
+				staticMethods: ['pwd','scanDir']
+			invoker.batch (onBatchDone,onBatchError)->
+				Path.pwd() (pwd)->
+					throw name: 'should not reach'
+				Path.scanDir() (dir)->
+					throw name: 'should not reach'
+				onBatchDone ->
+					throw name: 'should not reach'
+				onBatchError (reponse,code)->
+					code.should.gt 200
+					done()
+					
+
 	describe 'batch',->
 		[Path,Utils] = getClasses [
 			['Path',['pwd']]

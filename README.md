@@ -98,6 +98,16 @@ handle errors
 Utils.add(1,2)
 	success:(result)->
 	error:(result,code)->
+	
+batch (done,onError)->
+	Path.scanDir() ->
+		# won't be reached
+	Utils.add(1,1) ->
+		# won't be reached
+	done ->
+		# won't be reached
+	onError (response,code)->
+		console.log code > 200
 ```
 		
 	

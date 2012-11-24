@@ -155,11 +155,11 @@
       this.__callbacks = (_ref1 = this.__callbacks) != null ? _ref1 : [];
     }
 
-    Invocation.prototype.send = function(__done, __map) {
+    Invocation.prototype.send = function(__done, __before) {
       var opts,
         _this = this;
       this.__done = __done;
-      this.__map = __map;
+      this.__before = __before;
       opts = {
         type: 'POST',
         url: '/',
@@ -167,18 +167,12 @@
           'Content-type': 'application/json; charset=utf-8'
         },
         callback: function(code, text) {
-          var cb, idx, r, responses, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
+          var cb, idx, responses, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
           responses = JSON.parse(text === '' ? '{}' : text);
-          if (_this.__map != null) {
-            responses = (function() {
-              var _i, _len, _results;
-              _results = [];
-              for (_i = 0, _len = responses.length; _i < _len; _i++) {
-                r = responses[_i];
-                _results.push(this.__map(r));
-              }
-              return _results;
-            }).call(_this);
+          if (_this.__before != null) {
+            if (!_this.__before(text, code)) {
+              return;
+            }
           }
           if (code === 200) {
             _ref = _this.__callbacks;
@@ -321,13 +315,13 @@
   };
 
   batch = function(setup) {
-    var call, callback, callbacks, calls, done, done_callback, invocation, map, map_callback, registration, registration2, _;
-    done_callback = map_callback = null;
+    var before, before_callback, call, callback, callbacks, calls, done, done_callback, invocation, registration, registration2, _;
+    done_callback = before_callback = null;
     done = function(cb) {
       return done_callback = cb;
     };
-    map = function(cb) {
-      return map_callback = cb;
+    before = function(cb) {
+      return before_callback = cb;
     };
     calls = [];
     registration = addingInvocation.add(function(_arg) {
@@ -351,7 +345,7 @@
       }
       return _results;
     });
-    setup(done, map);
+    setup(done, before);
     addingInvocation.remove(registration);
     addingCallback.remove(registration2);
     callbacks = (function() {
@@ -373,7 +367,14 @@
       return _results;
     })();
     invocation = new Invocation(calls, callbacks);
-    return invocation.send(done_callback, map_callback);
+    return invocation.send(done_callback, function(response, code) {
+      if (code !== 200) {
+        before_callback(response, code);
+        return false;
+      } else {
+        return true;
+      }
+    });
   };
 
   invoke = function(_arg, cb) {

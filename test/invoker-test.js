@@ -50,7 +50,7 @@
           return done();
         });
       });
-      return it('should be able to crate instance of class', function(done) {
+      it('should be able to crate instance of class', function(done) {
         var User;
         User = getClass({
           name: 'User',
@@ -68,6 +68,34 @@
             return users.length.should.equal(1);
           });
           return onBatchDone(done);
+        });
+      });
+      return it('should handle errors', function(done) {
+        var Path;
+        Path = getClass({
+          name: 'Path',
+          staticMethods: ['pwd', 'scanDir']
+        });
+        return invoker.batch(function(onBatchDone, onBatchError) {
+          Path.pwd()(function(pwd) {
+            throw {
+              name: 'should not reach'
+            };
+          });
+          Path.scanDir()(function(dir) {
+            throw {
+              name: 'should not reach'
+            };
+          });
+          onBatchDone(function() {
+            throw {
+              name: 'should not reach'
+            };
+          });
+          return onBatchError(function(reponse, code) {
+            code.should.gt(200);
+            return done();
+          });
         });
       });
     });

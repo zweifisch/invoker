@@ -65,7 +65,7 @@ class Invocation
 		@__calls = @__calls ? []
 		@__callbacks= @__callbacks ? []
 
-	send: (@__done,@__map)->
+	send: (@__done,@__before)->
 		opts =
 			type:'POST'
 			url: '/'
@@ -73,8 +73,8 @@ class Invocation
 				'Content-type': 'application/json; charset=utf-8'
 			callback:(code,text)=>
 				responses = JSON.parse if text is '' then '{}' else text
-				if @__map?
-					responses = (@__map r for r in responses)
+				if @__before?
+					return unless @__before text,code
 				if code is 200
 					cb?.success? responses?[idx] for cb,idx in @__callbacks
 				else
@@ -128,9 +128,9 @@ getClasses = (classSchemas)->
 	(getClass {name:name,staticMethods:staticMethods,methods:methods} for [name,staticMethods,methods] in classSchemas)
 
 batch = (setup)->
-	done_callback = map_callback = null
+	done_callback = before_callback = null
 	done = (cb)-> done_callback = cb
-	map = (cb)-> map_callback = cb
+	before = (cb)-> before_callback = cb
 	calls = []
 	registration = addingInvocation.add ([call,id,invoker])->
 		calls.push [call,id,invoker]
@@ -140,13 +140,18 @@ batch = (setup)->
 			if call_id is id and call_invoker is invoker
 				calls[idx].push callback
 				break
-	setup done, map
+	setup done, before
 	addingInvocation.remove registration
 	addingCallback.remove registration2
 	callbacks = (callback for [_,_,_,callback] in calls)
 	calls = (call for [call,_,_,_] in calls)
 	invocation = new Invocation calls,callbacks
-	invocation.send done_callback, map_callback
+	invocation.send done_callback, (response,code)->
+		if code isnt 200
+			before_callback response,code
+			false
+		else
+			true
 
 invoke = ([classname,method,args,construt_args],cb)->
 	invocation = new Invocation [[classname,method,args,construt_args]], [cb]
